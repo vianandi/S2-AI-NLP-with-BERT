@@ -1,0 +1,4 @@
+Model,accuracy,f1,Epoch,Notes
+BERT,0.9606666666666667,0.9784198975859546,2,indobert-base-p1
+DistilBERT,0.6846666666666666,0.8025052192066806,2,indobertweet-uncased
+Ensemble,0.94,0.9674972914409534,-,Average logits
