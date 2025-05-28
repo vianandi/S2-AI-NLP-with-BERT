@@ -1,0 +1,8 @@
+| Model                          |   Accuracy |    F1 |   Size_MB |   Params_M |   Inference_s |   Throughput | Notes                     |
+|:-------------------------------|-----------:|------:|----------:|-----------:|--------------:|-------------:|:--------------------------|
+| BERT                           |      0.865 | 0.862 |    497.8  |     124.44 |        0.0401 |        24.94 | indobert-base-p1          |
+| DistilBERT                     |      0.85  | 0.847 |    442.26 |     110.56 |        0.0405 |        24.69 | indobertweet-uncased      |
+| IndoBERT Lite                  |      0.858 | 0.855 |    250.32 |      66    |        0.0287 |        34.84 | indobert-lite-base-p1     |
+| IndoBERTweet                   |      0.86  | 0.857 |    410.22 |     110    |        0.035  |        28.57 | indobertweet-base-uncased |
+| Ensemble (BERT + DistilBERT)   |      0.87  | 0.868 |    940.05 |     235    |        0.0794 |        12.59 | Average logits            |
+| Ensemble (Lite + IndoBERTweet) |      0.872 | 0.869 |    660.54 |     176    |        0.0642 |        15.58 | Average logits (ringan)   |
