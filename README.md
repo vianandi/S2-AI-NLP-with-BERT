@@ -10,11 +10,11 @@ source venv/bin/activate
 # Install requirements
 pip install -r requirements.txt
 
-1. Persiapan Data
+# 1. Persiapan Data
 Pastikan data sentiment berada di lokasi yang sesuai (sentiment_ablation/data/INA_TweetsPPKM_Labeled_Pure.csv)
 
 
-2. Melatih Model (waktu eksekusi lama)
+# 2. Melatih Model (waktu eksekusi lama)
 # Model BERT
 python train_bert.py
 
@@ -28,7 +28,7 @@ python train_indobert_lite.py
 python train_indobertweet.py
 
 
-3. Evaluasi Model
+# 3. Evaluasi Model
 # Evaluasi BERT & DistilBERT
 python evaluate.py
 
@@ -36,7 +36,7 @@ python evaluate.py
 python evaluate_IndoBERT-Lite_bertweet.py
 
 
-4. Benchmark Model
+# 4. Benchmark Model
 # Benchmark BERT & DistilBERT
 python benchmark_models.py
 
@@ -44,7 +44,7 @@ python benchmark_models.py
 python benchmark_IndoBERT-Lite_indobertweet.py
 
 
-5. Hasil dan Laporan
+# 5. Hasil dan Laporan
 # Hasilkan tabel dan visualisasi awal
 python result.py
 
@@ -52,14 +52,14 @@ python result.py
 python generate_final_results.py
 
 
-Output yang Dihasilkan
+# Output yang Dihasilkan
 Setelah menjalankan semua kode, Anda akan mendapatkan:
 1. Model terlatih di folder models
 2. Tabel perbandingan (CSV dan Markdown)
 3. Visualisasi performa model (PNG)
 4. Log pelatihan dan evaluasi
 
-Catatan
+# Catatan
 1. Proses pelatihan membutuhkan GPU untuk kinerja optimal
 2. Pastikan memiliki ruang penyimpanan yang cukup (16GB) untuk menyimpan model dan requirements python
 3. Seluruh proses bisa memakan waktu 3-5 jam tergantung spesifikasi hardware
