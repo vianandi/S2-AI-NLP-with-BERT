@@ -13,7 +13,7 @@ from utils import load_and_clean_data
 from tqdm import tqdm
 
 # === CONFIG ===
-NUM_SAMPLES = 300  # jumlah data untuk inferensi
+NUM_SAMPLES = 3000  # jumlah data untuk inferensi
 NUM_WARMUP = 5     # warmup run (tidak dihitung)
 MODEL_PATHS = {
     "Lite": "models/indobertlite/final",
