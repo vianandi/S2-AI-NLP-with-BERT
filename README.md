@@ -30,7 +30,7 @@ python train_indobertweet.py
 
 # 3. Evaluasi Model
 # Evaluasi BERT & DistilBERT
-python evaluate.py
+python evaluate_BERT_DistilBERT.py
 
 # Evaluasi IndoBERT Lite & IndoBERTweet
 python evaluate_IndoBERT-Lite_bertweet.py
@@ -38,7 +38,7 @@ python evaluate_IndoBERT-Lite_bertweet.py
 
 # 4. Benchmark Model
 # Benchmark BERT & DistilBERT
-python benchmark_models.py
+python benchmark_Bert_DistilBert.py
 
 # Benchmark IndoBERT Lite & IndoBERTweet
 python benchmark_IndoBERT-Lite_indobertweet.py
