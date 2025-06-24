@@ -9,11 +9,12 @@ from transformers import (
     BertForSequenceClassification,
     BertTokenizerFast
 )
-from utils import load_and_clean_data
+from utils import load_and_clean_all_datasets
 from tqdm import tqdm
 
 # === CONFIG ===
-NUM_SAMPLES = 3000  # jumlah data untuk inferensi
+df = load_and_clean_all_datasets()
+NUM_SAMPLES = len(df)
 NUM_WARMUP = 5     # warmup run (tidak dihitung)
 MODEL_PATHS = {
     "Lite": "models/indobertlite/final",
@@ -21,8 +22,8 @@ MODEL_PATHS = {
 }
 
 # === LOAD SAMPLE DATA ===
-df = load_and_clean_data("sentiment_ablation/data/INA_TweetsPPKM_Labeled_Pure.csv")
-df = df.sample(n=NUM_SAMPLES, random_state=42)
+df = load_and_clean_all_datasets()
+df = df.sample(n=NUM_SAMPLES, random_state=42, replace=True)
 texts = df["text"].tolist()
 
 # === HELPER ===
@@ -124,10 +125,11 @@ results.append({
 })
 
 # === SIMPAN & PLOT ===
+
 df = pd.DataFrame(results)
-df.to_csv("benchmark_lite_tweet.csv", index=False)
-df.to_markdown("benchmark_lite_tweet.md", index=False)
-print("\n✅ Disimpan ke: benchmark_lite_tweet.csv dan .md")
+df.to_csv("benchmarkindobert/benchmark_lite_tweet.csv", index=False)
+df.to_markdown("benchmarkindobert/benchmark_lite_tweet.md", index=False)
+print("\n✅ Disimpan ke: benchmark_lite_tweet.csv dan benchmark_lite_tweet.md")
 print(df)
 
 # === VISUALISASI ===
@@ -143,5 +145,14 @@ plt.ylabel("Value")
 plt.title("IndoBERT Lite vs IndoBERTweet Benchmark")
 plt.legend()
 plt.tight_layout()
-plt.savefig("benchmark_lite_tweet.png")
+plt.savefig("benchmarkindobert/benchmark_lite_tweet.png")
+plt.show()
+
+# Tambahkan grafik throughput
+plt.figure(figsize=(8, 5))
+plt.bar(df["Model"], df["Throughput"], color="mediumseagreen")
+plt.ylabel("Samples per second")
+plt.title("Model Throughput Comparison")
+plt.tight_layout()
+plt.savefig("benchmarkindobert/benchmark_throughput_plot.png")
 plt.show()

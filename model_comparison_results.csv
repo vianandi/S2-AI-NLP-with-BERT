@@ -1,0 +1,6 @@
+,accuracy,f1_score,precision,recall
+BERT,0.985,0.985,0.985,0.985
+DistilBERT,0.8725,0.8723,0.8746,0.8725
+IndoBERT-Lite,0.965,0.965,0.965,0.965
+IndoBERTweet,0.9775,0.9775,0.9775,0.9775
+Ensemble_All,0.9825,0.9825,0.9831,0.9825

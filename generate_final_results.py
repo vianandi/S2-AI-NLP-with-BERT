@@ -42,7 +42,7 @@ model_specs = {
         "Inference_s": 0.0794,
         "Throughput": 12.59
     },
-    "Ensemble IndoBERT": {
+    "Ensemble IndoBERT-Lite+IndoBERTweet": {
         "Size_MB": 660.54,
         "Params_M": 176.00,
         "Inference_s": 0.0642,
@@ -68,9 +68,7 @@ if eval_results is not None:
                 "Model": model_name,
                 "Accuracy": row['accuracy'],
                 "F1": row['f1'],
-                **model_specs[spec_key],
-                "Notes": row.get('Notes', '')
-            })
+                            })
         else:
             print(f"Warning: No hardware specs found for model {model_name}")
 else:
