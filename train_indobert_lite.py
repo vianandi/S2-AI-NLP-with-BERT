@@ -1,6 +1,7 @@
 import torch
 import numpy as np
-from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+import pandas as pd
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, roc_auc_score
 import matplotlib.pyplot as plt
 from transformers import (
     BertTokenizerFast,
@@ -36,9 +37,9 @@ dataset = dataset.map(tokenize, batched=True, remove_columns=["text"])
 # === TRAINING SETUP ===
 training_args = TrainingArguments(
     output_dir="models/indobertlite",
-    per_device_train_batch_size=8,
-    per_device_eval_batch_size=8,
-    num_train_epochs=2, 
+    per_device_train_batch_size=10,
+    per_device_eval_batch_size=10,
+    num_train_epochs=10, 
     save_strategy="epoch", 
     logging_dir="./logs",
     logging_steps=10,
@@ -52,7 +53,8 @@ def compute_metrics(pred):
         "accuracy": accuracy_score(labels, preds),
         "precision": precision_score(labels, preds, average='weighted', labels=[0, 1, 2], zero_division=0),
         "recall": recall_score(labels, preds, average='weighted', labels=[0, 1, 2], zero_division=0),
-        "f1": safe_f1_score(labels, preds, average='weighted', labels=[0, 1, 2])
+        "f1": safe_f1_score(labels, preds, average='weighted', labels=[0, 1, 2]),
+        "roc_auc": roc_auc_score(pd.get_dummies(labels), pd.get_dummies(preds), multi_class='ovr', average='weighted')
     }
 
 # === TRAINER ===
@@ -78,11 +80,11 @@ model.save_pretrained("models/indobertlite/final")
 tokenizer.save_pretrained("models/indobertlite/final")
 
 # === VISUALISASI METRIK ===
-metrics = ['accuracy', 'precision', 'recall', 'f1']
-values = [results['eval_accuracy'], results['eval_precision'], results['eval_recall'], results['eval_f1']]
+metrics = ['accuracy', 'precision', 'recall', 'f1', 'roc_auc']
+values = [results['eval_accuracy'], results['eval_precision'], results['eval_recall'], results['eval_f1'], results['eval_roc_auc']]
 
 plt.figure(figsize=(10, 6))
-plt.bar(metrics, values, color=['skyblue', 'orange', 'green', 'red'], alpha=0.8)
+plt.bar(metrics, values, color=['skyblue', 'orange', 'green', 'red', 'pink'], alpha=0.8)
 plt.ylim(0, 1)
 plt.title("Evaluation Metrics for IndoBERT Lite Model")
 plt.ylabel("Score")

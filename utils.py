@@ -3,25 +3,61 @@ import re
 import os
 from sklearn.metrics import f1_score
 import numpy as np
+from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
+
+# --- INISIALISASI STEMMER & KAMUS SLANG ---
+
+# Buat stemmer (lakukan sekali saja agar efisien)
+stemmer_factory = StemmerFactory()
+stemmer = stemmer_factory.create_stemmer()
+
+# Buat kamus normalisasi slang (bisa Anda kembangkan lebih lanjut)
+slang_dict = {
+    'ga': 'tidak', 'gak': 'tidak', 'nggak': 'tidak', 'engga': 'tidak',
+    'bgt': 'banget', 'jg': 'juga', 'aja': 'saja', 'sm': 'sama',
+    'tp': 'tapi', 'dlm': 'dalam', 'utk': 'untuk', 'dg': 'dengan',
+    'klo': 'kalau', 'krn': 'karena', 'sdh': 'sudah', 'blm': 'belum',
+    'yg': 'yang', 'yaa': 'ya', 'wkwkwk': '', 'hehe': '', 'hahaha': '',
+    'tdk': 'tidak', 'tks': 'terima kasih', 'dr': 'dari', 'kpd': 'kepada',
+    'gue': 'saya', 'gw': 'saya', 'lu': 'kamu', 'lo': 'kamu',
+    'karna': 'karena', 'gimana': 'bagaimana', 'gitu': 'begitu',
+    'emang': 'memang', 'gini': 'begini', 'kalo': 'kalau'
+}
 
 def standardize_label(label):
     label = str(label).strip().lower()
-    # More comprehensive label mapping
-    if any(word in label for word in ["pos", "positive", "1"]):
+    if any(word in label for word in ["pos", "positive", "1", "positif"]):
         return "positive"
-    elif any(word in label for word in ["neg", "negative", "0"]):
+    elif any(word in label for word in ["neg", "negative", "0", "negatif"]):
         return "negative"
     elif any(word in label for word in ["net", "neutral", "netral", "2"]):
         return "neutral"
     else:
-        return "neutral"  # Default to neutral instead of None
+        return "neutral"
 
-def clean_text(text):
+def preprocess_text_advanced(text):
+    """
+    Fungsi preprocessing teks yang lebih canggih, mencakup:
+    1. Pembersihan dasar (URL, mention, non-alfanumerik)
+    2. Normalisasi kata slang
+    3. Stemming
+    """
+    # 1. Pembersihan dasar
     text = str(text)
-    text = re.sub(r"http\S+", "", text)
-    text = re.sub(r"@\w+", "", text)
-    text = re.sub(r"[^a-zA-Z0-9\s]", "", text)
-    return text.lower().strip()
+    text = re.sub(r"http\S+", "", text)  # Hapus URL
+    text = re.sub(r"@\w+", "", text)     # Hapus mention
+    text = re.sub(r"[^a-zA-Z\s]", "", text) # Hapus karakter non-alfabet (spasi dipertahankan)
+    text = text.lower().strip()
+
+    # 2. Normalisasi kata slang
+    words = text.split()
+    normalized_words = [slang_dict.get(word, word) for word in words]
+    text = " ".join(normalized_words)
+
+    # 3. Stemming
+    text = stemmer.stem(text)
+
+    return text
 
 def safe_f1_score(y_true, y_pred, average='weighted', labels=None):
     """
@@ -31,7 +67,6 @@ def safe_f1_score(y_true, y_pred, average='weighted', labels=None):
         return f1_score(y_true, y_pred, average=average, labels=labels, zero_division=0)
     except ValueError as e:
         if "pos_label" in str(e):
-            # Handle missing label case by using only present labels
             unique_true = set(y_true)
             unique_pred = set(y_pred)
             present_labels = sorted(list(unique_true.union(unique_pred)))
@@ -42,68 +77,86 @@ def safe_f1_score(y_true, y_pred, average='weighted', labels=None):
 def load_and_clean_all_datasets():
     all_data = []
 
-    # === Dataset: Kurikulum 2013 ===
-    try:
-        df = pd.read_excel("sentiment_ablation/data/Dataset Sentimen kurikulum 2013.xlsx")
-        df = df[["tweet", "sentiment"]].rename(columns={"tweet": "text"})
-        print("✅ Loaded: Kurikulum 2013")
-        all_data.append(df)
-    except Exception as e:
-        print("❌ Kurikulum:", e)
+    # Struktur data baru yang lebih andal
+    # Setiap item berisi: path file, nama kolom teks, dan nama kolom sentimen
+    datasets_to_load = [
+        {
+            "path": "sentiment_ablation/data/Dataset Sentimen kurikulum 2013.xlsx",
+            "text_col": "tweet",
+            "sentiment_col": "sentiment"
+        },
+        {
+            "path": "sentiment_ablation/data/dataset_tweet_sentimen_tayangan_tv.csv",
+            "text_col": "Text Tweet",
+            "sentiment_col": "Sentiment"
+        },
+        {
+            "path": "sentiment_ablation/data/dataset_tweet_sentiment_opini_film.csv",
+            "text_col": "Text Tweet",
+            "sentiment_col": "Sentiment"
+        },
+        {
+            "path": "sentiment_ablation/data/id-tourism-sentimentanalysis.xlsx",
+            "text_col": "review",
+            "sentiment_col": "sentiment"
+        },
+        {
+            "path": "sentiment_ablation/data/dataset_tweet_sentiment_pilkada_DKI_2017.csv",
+            "text_col": "Text Tweet",
+            "sentiment_col": "Sentiment"
+        }
+    ]
 
-    # === Dataset: Tayangan TV ===
-    try:
-        df = pd.read_csv("sentiment_ablation/data/dataset_tweet_sentimen_tayangan_tv.csv")
-        df = df[["Text Tweet", "Sentiment"]].rename(columns={"Text Tweet": "text", "Sentiment": "sentiment"})
-        print("✅ Loaded: Tayangan TV")
-        all_data.append(df)
-    except Exception as e:
-        print("❌ Tayangan TV:", e)
+    for dataset_info in datasets_to_load:
+        file_path = dataset_info["path"]
+        try:
+            # Membaca file berdasarkan ekstensi
+            if file_path.endswith(".csv"):
+                df = pd.read_csv(file_path, encoding="utf-8")  # Tambahkan encoding jika diperlukan
+            elif file_path.endswith(".xlsx"):
+                df = pd.read_excel(file_path)  # Gunakan pd.read_excel untuk file Excel
+            else:
+                print(f"⚠️ Unsupported file format: {file_path}")
+                continue
 
-    # === Dataset: Opini Film ===
-    try:
-        df = pd.read_csv("sentiment_ablation/data/dataset_tweet_sentiment_opini_film.csv")
-        df = df[["Text Tweet", "Sentiment"]].rename(columns={"Text Tweet": "text", "Sentiment": "sentiment"})
-        print("✅ Loaded: Opini Film")
-        all_data.append(df)
-    except Exception as e:
-        print("❌ Opini Film:", e)
+            # Mengambil hanya kolom yang diperlukan dan mengganti namanya menjadi "text" dan "sentiment"
+            df = df[[dataset_info["text_col"], dataset_info["sentiment_col"]]].rename(columns={
+                dataset_info["text_col"]: "text",
+                dataset_info["sentiment_col"]: "sentiment"
+            })
+            
+            print(f"✅ Loaded: {os.path.basename(file_path)}")
+            all_data.append(df)
 
-    # === Dataset: Pariwisata ===
-    try:
-        df = pd.read_excel("sentiment_ablation/data/id-tourism-sentimentanalysis.xlsx")
-        df = df[["review", "sentiment"]].rename(columns={"review": "text"})
-        print("✅ Loaded: Pariwisata")
-        all_data.append(df)
-    except Exception as e:
-        print("❌ Pariwisata:", e)
-        
-    # === Dataset: Sentiment Pilkada DKI ===
-    try:
-        df = pd.read_csv("sentiment_ablation/data/dataset_tweet_sentiment_pilkada_DKI_2017.csv")
-        df = df[["Text Tweet", "Sentiment"]].rename(columns={"Text Tweet": "text", "Sentiment": "sentiment"})
-        print("✅ Loaded: Pilkada DKI")
-        all_data.append(df)
-    except Exception as e:
-        print("❌ Pilkada DKI:", e)
+        except FileNotFoundError:
+            print(f"❌ File not found: {file_path}")
+        except KeyError as e:
+            print(f"❌ Column error in {file_path}: {e}")
+        except Exception as e:
+            print(f"❌ General error loading {file_path}: {e}")
 
-    # === Gabungkan Semua ===
+    # Gabungkan semua data
+    if not all_data:
+        print("❌ No datasets were loaded. Please check file paths and formats.")
+        return pd.DataFrame()
+
     combined = pd.concat(all_data, ignore_index=True)
-    combined.dropna(inplace=True)
-    combined["text"] = combined["text"].apply(clean_text)
+    combined.dropna(subset=['text', 'sentiment'], inplace=True)
+
+    print("\n🔄 Applying advanced text preprocessing (normalization & stemming)...")
+    combined["text"] = combined["text"].apply(preprocess_text_advanced)
+    
     combined["sentiment"] = combined["sentiment"].apply(standardize_label)
     combined = combined[combined["sentiment"].isin(["positive", "neutral", "negative"])]
-
-    # Ensure balanced representation of all classes
-    min_samples = combined["sentiment"].value_counts().min()
-    if min_samples < 200:  
-        print(f"⚠️  Warning: Minimum class has only {min_samples} samples")
     
+    # Pastikan tidak ada teks kosong setelah preprocessing
+    combined = combined[combined['text'].str.strip().astype(bool)]
+
     label_map = {"negative": 0, "neutral": 1, "positive": 2}
     combined["label"] = combined["sentiment"].map(label_map)
 
-    print(f"\n✅ Total data gabungan setelah cleaning: {len(combined)}")
-    print(f"📊 Label distribution:")
+    print(f"\n✅ Total data gabungan setelah preprocessing lanjutan: {len(combined)}")
+    print(f"📊 Distribusi label:")
     print(combined["sentiment"].value_counts())
     
     return combined
