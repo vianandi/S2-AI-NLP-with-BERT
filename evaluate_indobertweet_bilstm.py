@@ -4,10 +4,13 @@ from torch.utils.data import DataLoader, TensorDataset
 from transformers import BertTokenizerFast, BertModel, get_linear_schedule_with_warmup
 from torch.optim import AdamW
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, confusion_matrix, precision_recall_fscore_support
 from tqdm import tqdm
 import numpy as np
 import os
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
 
 from utils import load_and_clean_all_datasets
 
@@ -82,8 +85,7 @@ class HybridClassifier(nn.Module):
     def __init__(self, n_classes):
         super(HybridClassifier, self).__init__()
         self.bert = BertModel.from_pretrained('indolem/indobertweet-base-uncased')
-        self.bilstm = nn.LSTM(input_size=self.bert.config.hidden_size, hidden_size=128, num_layers=2,
-                              bidirectional=True, batch_first=True, dropout=0.2)
+        self.bilstm = nn.LSTM(input_size=self.bert.config.hidden_size, hidden_size=128, num_layers=2, bidirectional=True, batch_first=True, dropout=0.2)
         self.dropout = nn.Dropout(p=0.3)
         self.out = nn.Linear(128 * 2, n_classes)
 
@@ -144,16 +146,147 @@ def eval_model(model, data_loader, loss_fn, n_examples):
     print(classification_report(true_labels, predictions, zero_division=0))
     return avg_loss, true_labels, predictions
 
+def save_evaluation_results(true_labels, predictions, train_losses, val_losses, output_folder="resultevaluateindobertweetbilstm"):
+    """
+    Membuat dan menyimpan hasil evaluasi dalam bentuk visualisasi
+    """
+    # Buat folder output jika belum ada
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+        print(f"✅ Membuat folder output: {output_folder}")
+    
+    # 1. Confusion Matrix
+    plt.figure(figsize=(10, 8))
+    cm = confusion_matrix(true_labels, predictions)
+    
+    # Map label numerik ke teks
+    label_map_reverse = {v: k for k, v in label_mapping.items()}
+    sentiment_labels = {
+        0: 'Negatif',
+        1: 'Netral', 
+        2: 'Positif'
+    }
+    
+    label_names = [sentiment_labels.get(label_map_reverse.get(i, i), f"Class {i}") for i in range(len(np.unique(true_labels)))]
+    
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+                xticklabels=label_names, yticklabels=label_names)
+    plt.xlabel('Prediksi')
+    plt.ylabel('Label Asli')
+    plt.title('Confusion Matrix - IndoBERTweet + BiLSTM')
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_folder, 'confusion_matrix.png'), dpi=300)
+    print(f"✅ Confusion matrix disimpan ke {output_folder}/confusion_matrix.png")
+    plt.close()
+    
+    # 2. Metrics Bar Chart
+    precision, recall, f1, _ = precision_recall_fscore_support(
+        true_labels, predictions, average='weighted', zero_division=0)
+    accuracy = np.mean(np.array(true_labels) == np.array(predictions))
+    
+    metrics = {
+        'Akurasi': accuracy,
+        'Presisi': precision,
+        'Recall': recall,
+        'F1-Score': f1
+    }
+    
+    plt.figure(figsize=(10, 6))
+    bars = plt.bar(metrics.keys(), metrics.values(), color=['#2196F3', '#4CAF50', '#FFC107', '#E91E63'])
+    plt.ylim(0, 1.0)
+    plt.title('Metrik Klasifikasi - IndoBERTweet + BiLSTM')
+    plt.ylabel('Nilai')
+    
+    # Tambahkan nilai di atas bar
+    for bar in bars:
+        height = bar.get_height()
+        plt.text(bar.get_x() + bar.get_width()/2., height + 0.02,
+                f'{height:.4f}', ha='center', fontweight='bold')
+    
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_folder, 'metrics.png'), dpi=300)
+    print(f"✅ Grafik metrik disimpan ke {output_folder}/metrics.png")
+    plt.close()
+    
+    # 3. Loss Curves
+    if len(train_losses) > 1:
+        plt.figure(figsize=(10, 6))
+        epochs = range(1, len(train_losses) + 1)
+        plt.plot(epochs, train_losses, 'b-o', label='Training Loss')
+        plt.plot(epochs, val_losses, 'r-o', label='Validation Loss')
+        plt.title('Kurva Loss Training dan Validasi - IndoBERTweet + BiLSTM')
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss')
+        plt.legend()
+        plt.grid(True, linestyle='--', alpha=0.7)
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_folder, 'loss_curves.png'), dpi=300)
+        print(f"✅ Kurva loss disimpan ke {output_folder}/loss_curves.png")
+        plt.close()
+    
+    # 4. Classification Report sebagai tabel
+    from sklearn.metrics import classification_report
+    report = classification_report(true_labels, predictions, 
+                                labels=range(num_classes),
+                                target_names=label_names,
+                                output_dict=True, 
+                                zero_division=0)
+    
+    report_df = pd.DataFrame(report).transpose()
+    
+    # Simpan sebagai CSV
+    report_df.to_csv(os.path.join(output_folder, 'classification_report.csv'))
+    
+    # Visualisasi tabel
+    fig, ax = plt.subplots(figsize=(12, 6))
+    ax.axis('tight')
+    ax.axis('off')
+    table = ax.table(cellText=report_df.round(4).values,
+                    rowLabels=report_df.index,
+                    colLabels=report_df.columns,
+                    cellLoc='center', 
+                    loc='center')
+    
+    table.auto_set_font_size(False)
+    table.set_fontsize(10)
+    table.scale(1.2, 1.5)
+    
+    plt.title('Classification Report - IndoBERTweet + BiLSTM')
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_folder, 'classification_report.png'), dpi=300)
+    print(f"✅ Classification report disimpan ke {output_folder}/classification_report.png")
+    plt.close()
+
+# Modifikasi training loop untuk melacak loss
+train_losses = []
+val_losses = []
+
 print("\n🚀 Memulai proses training...")
 for epoch in range(EPOCHS):
     print(f'\n--- Epoch {epoch + 1}/{EPOCHS} ---')
     train_loss = train_epoch(model, train_dataloader, loss_fn, optimizer, scheduler, len(train_data))
     print(f'Train loss: {train_loss}')
-    val_loss, _, _ = eval_model(model, val_dataloader, loss_fn, len(val_data))
+    train_losses.append(train_loss)
+    
+    val_loss, true_vals, predictions = eval_model(model, val_dataloader, loss_fn, len(val_data))
     print(f'Validation loss: {val_loss}')
+    val_losses.append(val_loss)
+
+# Evaluasi akhir
+print("\n🔍 Melakukan evaluasi akhir model...")
+final_val_loss, final_true_labels, final_predictions = eval_model(model, val_dataloader, loss_fn, len(val_data))
+
+# Simpan hasil evaluasi sebagai PNG
+print("\n📊 Menyimpan hasil evaluasi dalam bentuk visualisasi...")
+save_evaluation_results(
+    final_true_labels, 
+    final_predictions, 
+    train_losses, 
+    val_losses
+)
 
 # --- 6. Simpan Model Hibrida ---
-output_dir = '/models/hybrid_indobertweet_bilstm/'
+output_dir = './models/hybrid_indobertweet_bilstm/'
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 print(f"\n💾 Menyimpan model hibrida terlatih ke {output_dir}")
