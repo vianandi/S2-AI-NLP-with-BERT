@@ -4,12 +4,15 @@ import os
 from sklearn.metrics import f1_score
 import numpy as np
 from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
+from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFactory
 
 # --- INISIALISASI STEMMER & KAMUS SLANG ---
 
 # Buat stemmer (lakukan sekali saja agar efisien)
 stemmer_factory = StemmerFactory()
 stemmer = stemmer_factory.create_stemmer()
+stopword_factory = StopWordRemoverFactory()
+stopword_remover = stopword_factory.create_stop_word_remover()
 
 # Buat kamus normalisasi slang (bisa Anda kembangkan lebih lanjut)
 slang_dict = {
@@ -37,25 +40,32 @@ def standardize_label(label):
 
 def preprocess_text_advanced(text):
     """
-    Fungsi preprocessing teks yang lebih canggih, mencakup:
+    Fungsi preprocessing lengkap:
     1. Pembersihan dasar (URL, mention, non-alfanumerik)
-    2. Normalisasi kata slang
-    3. Stemming
+    2. Case folding 
+    3. Normalisasi kata slang
+    4. Stemming
+    5. Stopword removal (BARU!)
     """
     # 1. Pembersihan dasar
     text = str(text)
     text = re.sub(r"http\S+", "", text)  # Hapus URL
     text = re.sub(r"@\w+", "", text)     # Hapus mention
-    text = re.sub(r"[^a-zA-Z\s]", "", text) # Hapus karakter non-alfabet (spasi dipertahankan)
+    text = re.sub(r"[^a-zA-Z\s]", "", text) # Hapus karakter non-alfabet
+    
+    # 2. Case folding (BARU!)
     text = text.lower().strip()
 
-    # 2. Normalisasi kata slang
+    # 3. Normalisasi kata slang
     words = text.split()
     normalized_words = [slang_dict.get(word, word) for word in words]
     text = " ".join(normalized_words)
 
-    # 3. Stemming
+    # 4. Stemming
     text = stemmer.stem(text)
+
+    # 5. Stopword removal (BARU!)
+    text = stopword_remover.remove(text)
 
     return text
 

@@ -80,11 +80,11 @@ model.save_pretrained("models/indobertlite/final")
 tokenizer.save_pretrained("models/indobertlite/final")
 
 # === VISUALISASI METRIK ===
-metrics = ['accuracy', 'precision', 'recall', 'f1', 'roc_auc']
-values = [results['eval_accuracy'], results['eval_precision'], results['eval_recall'], results['eval_f1'], results['eval_roc_auc']]
+metrics = ['accuracy', 'precision', 'recall', 'f1']
+values = [results['eval_accuracy'], results['eval_precision'], results['eval_recall'], results['eval_f1']]
 
 plt.figure(figsize=(10, 6))
-plt.bar(metrics, values, color=['skyblue', 'orange', 'green', 'red', 'pink'], alpha=0.8)
+plt.bar(metrics, values, color=['#106EC6', '#039CDA', '#0CCFD9', '#13DCA5'], alpha=0.8)
 plt.ylim(0, 1)
 plt.title("Evaluation Metrics for IndoBERT Lite Model")
 plt.ylabel("Score")

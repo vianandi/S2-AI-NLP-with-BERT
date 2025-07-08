@@ -192,7 +192,7 @@ def save_evaluation_results(true_labels, predictions, train_losses, val_losses, 
     }
     
     plt.figure(figsize=(10, 6))
-    bars = plt.bar(metrics.keys(), metrics.values(), color=['#2196F3', '#4CAF50', '#FFC107', '#E91E63'])
+    bars = plt.bar(metrics.keys(), metrics.values(), color=['#106EC6', '#11A1C3', '#039CDA', '#13DCA5'])
     plt.ylim(0, 1.0)
     plt.title('Metrik Klasifikasi - IndoBERTweet + BiLSTM')
     plt.ylabel('Nilai')

@@ -76,11 +76,11 @@ model.save_pretrained("models/bert/final")
 tokenizer.save_pretrained("models/bert/final")
 
 # Visualize evaluation results
-metrics = ['accuracy', 'precision', 'recall', 'f1', 'roc_auc']
-values = [results['eval_accuracy'], results['eval_precision'], results['eval_recall'], results['eval_f1'], results['eval_roc_auc']]
+metrics = ['accuracy', 'precision', 'recall', 'f1']
+values = [results['eval_accuracy'], results['eval_precision'], results['eval_recall'], results['eval_f1']]
 
 plt.figure(figsize=(10, 6))
-plt.bar(metrics, values, color=['skyblue', 'orange', 'green', 'red', 'pink'], alpha=0.8)
+plt.bar(metrics, values, color=['#106EC6', '#11A1C3', '#039CDA', '#13DCA5'], alpha=0.8)
 plt.ylim(0, 1)
 plt.title("Evaluation Metrics for BERT Model")
 plt.ylabel("Score")
